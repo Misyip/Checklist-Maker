@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Progression Tracker & Table Maker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b0e14;
+      --panel-bg: #141822;
+      --card-bg: #1e2430;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --accent-red: #ff4d4d;
+      --accent-green: #00e676;
+      --accent-gray: #768390;
+      --gta-yellow: #f1c40f;
+      --border-color: #2d3545;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Rajdhani', sans-serif;
+      padding: 24px 16px;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .container {
+      max-width: 1250px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    /* Top Right Action Bar */
+    .top-actions {
+      position: absolute;
+      top: 0;
+      right: 0;
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+      padding-top: 10px;
+    }
+
+    .editable-header {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.2rem;
+      letter-spacing: 2px;
+      color: var(--text-main);
+      text-transform: uppercase;
+      text-shadow: 0 0 12px rgba(241, 196, 15, 0.2);
+      margin-bottom: 8px;
+      outline: none;
+      padding: 4px 8px;
+      border: 1px dashed transparent;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .edit-mode-active .editable-header:hover, 
+    .edit-mode-active .editable-header:focus {
+      border-color: var(--gta-yellow);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .editable-subtitle {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      letter-spacing: 0.5px;
+      outline: none;
+      padding: 4px 8px;
+      border: 1px dashed transparent;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .edit-mode-active .editable-subtitle:hover, 
+    .edit-mode-active .editable-subtitle:focus {
+      border-color: var(--gta-yellow);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Progress Widget */
+    .progress-section {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .progress-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.15rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .progress-stats {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--gta-yellow);
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 20px;
+      background: #080a0f;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00c853, #00e676);
+      transition: width 0.4s ease-in-out;
+      box-shadow: 0 0 14px rgba(0, 230, 118, 0.6);
+    }
+
+    .progress-legend {
+      display: flex;
+      gap: 20px;
+      margin-top: 14px;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot.red { background: var(--accent-red); box-shadow: 0 0 6px var(--accent-red); }
+    .dot.green { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+    .dot.gray { background: var(--accent-gray); }
+
+    /* Controls Panel */
+    .controls-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      border-color: var(--gta-yellow);
+      background: #283040;
+    }
+
+    .btn .material-icons {
+      font-size: 1.1rem;
+    }
+
+    .btn-primary {
+      background: rgba(241, 196, 15, 0.15);
+      border-color: rgba(241, 196, 15, 0.4);
+      color: var(--gta-yellow);
+    }
+
+    .btn-primary:hover {
+      background: rgba(241, 196, 15, 0.3);
+    }
+
+    .btn-danger {
+      background: rgba(255, 77, 77, 0.1);
+      border-color: rgba(255, 77, 77, 0.4);
+      color: var(--accent-red);
+    }
+
+    .btn-danger:hover {
+      background: rgba(255, 77, 77, 0.25);
+    }
+
+    .btn-mode {
+      background: rgba(0, 230, 118, 0.15);
+      border-color: rgba(0, 230, 118, 0.4);
+      color: var(--accent-green);
+    }
+
+    .btn-mode.editing {
+      background: rgba(241, 196, 15, 0.15);
+      border-color: rgba(241, 196, 15, 0.4);
+      color: var(--gta-yellow);
+    }
+
+    .btn-filter.active {
+      color: var(--text-main);
+      border-color: var(--gta-yellow);
+      background: #283040;
+    }
+
+    .search-input {
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 1rem;
+      width: 240px;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--gta-yellow);
+    }
+
+    /* Table Styles */
+    .table-container {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow-x: auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background: #0f121a;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .th-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .th-title {
+      outline: none;
+      padding: 2px 4px;
+      border-radius: 4px;
+      border: 1px dashed transparent;
+    }
+
+    .edit-mode-active .th-title:hover, 
+    .edit-mode-active .th-title:focus {
+      border-color: var(--gta-yellow);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .btn-del-col {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 2px 4px;
+      line-height: 1;
+      border-radius: 3px;
+    }
+
+    .btn-del-col:hover {
+      color: var(--accent-red);
+      background: rgba(255, 77, 77, 0.2);
+    }
+
+    tr.row-item {
+      transition: background 0.15s ease;
+    }
+
+    tr.row-item:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    /* Status Styling */
+    tr.status-done td.editable-cell {
+      text-decoration: line-through;
+      opacity: 0.75;
+      color: var(--accent-green);
+    }
+
+    tr.status-pending td.editable-cell {
+      color: var(--accent-red);
+    }
+
+    tr.status-optional td.editable-cell {
+      color: var(--accent-gray);
+    }
+
+    .editable-cell {
+      outline: none;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px dashed transparent;
+      min-width: 80px;
+    }
+
+    .editable-cell:hover, .editable-cell:focus {
+      border-color: var(--gta-yellow);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Custom Checkbox */
+    .checkbox-cell {
+      text-align: center;
+      width: 50px;
+    }
+
+    .custom-checkbox {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--accent-green);
+    }
+
+    .status-select {
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .status-select:focus {
+      outline: none;
+      border-color: var(--gta-yellow);
+    }
+
+    .action-cell {
+      text-align: center;
+      width: 60px;
+    }
+
+    .btn-del-row {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .btn-del-row:hover {
+      color: var(--accent-red);
+      background: rgba(255, 77, 77, 0.2);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .top-actions {
+        position: static;
+        margin-bottom: 16px;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body id="appBody" class="view-mode">
+
+  <div class="container">
+    <!-- Top Right Corner Action Buttons -->
+    <div class="top-actions">
+      <button class="btn btn-mode" id="modeToggleBtn" onclick="toggleEditMode()">
+        <span class="material-icons" id="modeIcon">lock</span>	
+      </button>
+      <button class="btn" onclick="exportData()">
+        <span class="material-icons">save_alt</span>
+      </button>
+      <button class="btn" onclick="document.getElementById('fileInput').click()">
+        <span class="material-icons">folder_open</span>
+      </button>
+      <button class="btn btn-danger edit-only-group" style="display: none;" onclick="resetTracker()">
+        <span class="material-icons">delete_sweep</span>
+      </button>
+      <input type="file" id="fileInput" accept=".json" onchange="importData(event)">
+    </div>
+
+    <header>
+      <h1 class="editable-header" id="pageTitle" onblur="saveHeaderDetails()">My Custom Tracker</h1>
+      <br>
+      <p class="editable-subtitle" id="pageSubtitle" onblur="saveHeaderDetails()">Example description for your checklist table</p>
+    </header>
+
+    <!-- Progress Tracker Bar -->
+    <div class="progress-section">
+      <div class="progress-header">
+        <span class="progress-title" id="trackerTitle">Progression Tracker</span>
+        <span class="progress-stats" id="progressText">0% (0 / 1)</span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+      <div class="progress-legend">
+        <span class="legend-item"><span class="dot red"></span> Pending</span>
+        <span class="legend-item"><span class="dot green"></span> Complete</span>
+        <span class="legend-item"><span class="dot gray"></span> Optional (Excluded from %)</span>
+      </div>
+    </div>
+
+    <!-- Controls Panel -->
+    <div class="controls-panel">
+      <!-- Controls Row -->
+      <div class="controls-row">
+        <div class="btn-group">
+          <!-- Edit-mode specific builder actions -->
+          <span class="edit-only-group" style="display: none; gap: 8px;">
+            <button class="btn btn-primary" onclick="addRow()">+ Add Row</button>
+            <button class="btn btn-primary" onclick="addColumn()">+ Add Column</button>
+          </span>
+
+          <button class="btn btn-filter active" onclick="setFilter('all', this)">All</button>
+          <button class="btn btn-filter" onclick="setFilter('pending', this)">Pending</button>
+          <button class="btn btn-filter" onclick="setFilter('completed', this)">Completed</button>
+          <button class="btn btn-filter" onclick="setFilter('optional', this)">Optional</button>
+        </div>
+
+        <div class="btn-group">
+          <input type="text" id="searchInput" class="search-input" placeholder="Search table details..." oninput="renderTable()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Dynamic Table Container -->
+    <div class="table-container">
+      <table>
+        <thead id="tableHead">
+          <!-- Dynamic Columns -->
+        </thead>
+        <tbody id="tableBody">
+          <!-- Dynamic Rows -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Fully blank initial default data schema with 1 column, 1 row, and example text
+    const defaultData = {
+      title: "My Custom Tracker",
+      subtitle: "Example description for your checklist table",
+      columns: [
+        { id: "col_example", title: "Example Column" }
+      ],
+      rows: [
+        { 
+          id: "row_1", 
+          done: false, 
+          isOptional: false, 
+          cells: { 
+            col_example: "Example Row Item" 
+          } 
+        }
+      ]
+    };
+
+    let appState = null;
+    let currentFilter = 'all';
+    let isEditingMode = false;
+    let db = null;
+
+    // --- IndexedDB Connection ---
+    function initDB() {
+      const request = indexedDB.open('DynamicTrackerDB_v3', 1);
+
+      request.onupgradeneeded = (e) => {
+        const dbInstance = e.target.result;
+        if (!dbInstance.objectStoreNames.contains('app_data')) {
+          dbInstance.createObjectStore('app_data');
+        }
+      };
+
+      request.onsuccess = (e) => {
+        db = e.target.result;
+        loadState();
+      };
+
+      request.onerror = (e) => {
+        console.warn('IndexedDB unavailable. Using LocalStorage fallback.', e);
+        loadStateLocalStorage();
+      };
+    }
+
+    function loadState() {
+      if (!db) {
+        loadStateLocalStorage();
+        return;
+      }
+
+      const tx = db.transaction('app_data', 'readonly');
+      const store = tx.objectStore('app_data');
+      const getReq = store.get('current_state');
+
+      getReq.onsuccess = () => {
+        if (getReq.result) {
+          appState = getReq.result;
+        } else {
+          appState = JSON.parse(JSON.stringify(defaultData));
+          saveState();
+        }
+        renderApp();
+      };
+    }
+
+    function saveState() {
+      if (!appState) return;
+
+      if (db) {
+        const tx = db.transaction('app_data', 'readwrite');
+        const store = tx.objectStore('app_data');
+        store.put(appState, 'current_state');
+      }
+      localStorage.setItem('dynamic_tracker_state_v3', JSON.stringify(appState));
+    }
+
+    function loadStateLocalStorage() {
+      const stored = localStorage.getItem('dynamic_tracker_state_v3');
+      if (stored) {
+        appState = JSON.parse(stored);
+      } else {
+        appState = JSON.parse(JSON.stringify(defaultData));
+      }
+      renderApp();
+    }
+
+    // --- Mode Toggle Logic ---
+    function toggleEditMode() {
+      isEditingMode = !isEditingMode;
+      const body = document.getElementById('appBody');
+      const btn = document.getElementById('modeToggleBtn');
+      const modeIcon = document.getElementById('modeIcon');
+      const editElements = document.querySelectorAll('.edit-only-group');
+
+      if (isEditingMode) {
+        body.className = 'edit-mode-active';
+        btn.className = 'btn btn-mode editing';
+        modeIcon.innerText = 'lock_open';
+        document.getElementById('pageTitle').setAttribute('contenteditable', 'true');
+        document.getElementById('pageSubtitle').setAttribute('contenteditable', 'true');
+        editElements.forEach(el => el.style.display = 'inline-flex');
+      } else {
+        body.className = 'view-mode';
+        btn.className = 'btn btn-mode';
+        modeIcon.innerText = 'lock';
+        document.getElementById('pageTitle').removeAttribute('contenteditable');
+        document.getElementById('pageSubtitle').removeAttribute('contenteditable');
+        editElements.forEach(el => el.style.display = 'none');
+      }
+      renderTable();
+    }
+
+    // --- Core UI Rendering ---
+    function renderApp() {
+      document.getElementById('pageTitle').innerText = appState.title || "My Custom Tracker";
+      document.getElementById('pageSubtitle').innerText = appState.subtitle || "Example description";
+
+      renderTable();
+      updateProgress();
+    }
+
+    function saveHeaderDetails() {
+      if (!isEditingMode) return;
+      appState.title = document.getElementById('pageTitle').innerText.trim();
+      appState.subtitle = document.getElementById('pageSubtitle').innerText.trim();
+      saveState();
+    }
+
+    function renderTable() {
+      const search = document.getElementById('searchInput').value.toLowerCase().trim();
+      const thead = document.getElementById('tableHead');
+      const tbody = document.getElementById('tableBody');
+
+      // 1. Render Table Header
+      let headHTML = '<tr>';
+      headHTML += '<th class="checkbox-cell">Done</th>';
+      
+      appState.columns.forEach(col => {
+        headHTML += `
+          <th>
+            <div class="th-content">
+              ${isEditingMode 
+                ? `<span class="th-title" contenteditable="true" onblur="updateColumnTitle('${col.id}', this)">${col.title}</span>`
+                : `<span>${col.title}</span>`
+              }
+              ${isEditingMode && appState.columns.length > 1 ? `<button class="btn-del-col" onclick="deleteColumn('${col.id}')" title="Delete Column">✕</button>` : ''}
+            </div>
+          </th>
+        `;
+      });
+
+      headHTML += '<th>Status</th>';
+      if (isEditingMode) {
+        headHTML += '<th class="action-cell">Del</th>';
+      }
+      headHTML += '</tr>';
+      thead.innerHTML = headHTML;
+
+      // 2. Render Table Rows
+      tbody.innerHTML = '';
+      
+      const filteredRows = appState.rows.filter(row => {
+        const rowText = Object.values(row.cells).join(' ').toLowerCase();
+        const matchesSearch = rowText.includes(search);
+        if (!matchesSearch) return false;
+
+        if (currentFilter === 'pending') return !row.done && !row.isOptional;
+        if (currentFilter === 'completed') return row.done && !row.isOptional;
+        if (currentFilter === 'optional') return row.isOptional;
+
+        return true;
+      });
+
+      filteredRows.forEach(row => {
+        const tr = document.createElement('tr');
+        
+        let rowStatusClass = 'status-pending';
+        if (row.isOptional) rowStatusClass = 'status-optional';
+        else if (row.done) rowStatusClass = 'status-done';
+
+        tr.className = `row-item ${rowStatusClass}`;
+
+        let rowHTML = '';
+        
+        // Checkbox Cell
+        rowHTML += `
+          <td class="checkbox-cell">
+            <input type="checkbox" class="custom-checkbox" ${row.done ? 'checked' : ''} ${row.isOptional ? 'disabled' : ''} onchange="toggleRowDone('${row.id}')">
+          </td>
+        `;
+
+        // Dynamic Text Data Cells
+        appState.columns.forEach(col => {
+          const cellVal = row.cells[col.id] !== undefined ? row.cells[col.id] : '';
+          if (isEditingMode) {
+            rowHTML += `<td class="editable-cell" contenteditable="true" onblur="updateCell('${row.id}', '${col.id}', this)">${cellVal}</td>`;
+          } else {
+            rowHTML += `<td>${cellVal}</td>`;
+          }
+        });
+
+        // Type / Optional Status Select
+        if (isEditingMode) {
+          rowHTML += `
+            <td>
+              <select class="status-select" onchange="updateRowType('${row.id}', this.value)">
+                <option value="tracked" ${!row.isOptional ? 'selected' : ''}>Tracked</option>
+                <option value="optional" ${row.isOptional ? 'selected' : ''}>Optional</option>
+              </select>
+            </td>
+          `;
+        } else {
+          let badgeText = row.isOptional ? 'Optional' : (row.done ? 'Completed' : 'Pending');
+          let badgeColor = row.isOptional ? 'var(--accent-gray)' : (row.done ? 'var(--accent-green)' : 'var(--accent-red)');
+          rowHTML += `<td><span style="color: ${badgeColor}; font-weight: 700; text-transform: uppercase; font-size: 0.85rem;">${badgeText}</span></td>`;
+        }
+
+        // Row Delete Action (Edit mode only)
+        if (isEditingMode) {
+          rowHTML += `
+            <td class="action-cell">
+              <button class="btn-del-row" onclick="deleteRow('${row.id}')" title="Delete Row">🗑</button>
+            </td>
+          `;
+        }
+
+        tr.innerHTML = rowHTML;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // --- Data Modification Handlers ---
+    function updateColumnTitle(colId, element) {
+      if (!isEditingMode) return;
+      const newTitle = element.innerText.trim();
+      const col = appState.columns.find(c => c.id === colId);
+      if (col) {
+        col.title = newTitle || "Column";
+        saveState();
+      }
+    }
+
+    function addColumn() {
+      if (!isEditingMode) return;
+      const newColId = 'col_' + Date.now();
+      appState.columns.push({ id: newColId, title: 'New Column' });
+      appState.rows.forEach(r => {
+        r.cells[newColId] = '';
+      });
+      saveState();
+      renderApp();
+    }
+
+    function deleteColumn(colId) {
+      if (!isEditingMode) return;
+      if (appState.columns.length <= 1) {
+        alert('You must have at least one text column.');
+        return;
+      }
+      appState.columns = appState.columns.filter(c => c.id !== colId);
+      appState.rows.forEach(r => {
+        delete r.cells[colId];
+      });
+      saveState();
+      renderApp();
+    }
+
+    function addRow() {
+      if (!isEditingMode) return;
+      const newRowId = 'row_' + Date.now();
+      const newCells = {};
+      appState.columns.forEach(c => {
+        newCells[c.id] = '';
+      });
+
+      appState.rows.push({
+        id: newRowId,
+        done: false,
+        isOptional: false,
+        cells: newCells
+      });
+
+      saveState();
+      renderApp();
+    }
+
+    function deleteRow(rowId) {
+      if (!isEditingMode) return;
+      appState.rows = appState.rows.filter(r => r.id !== rowId);
+      saveState();
+      renderApp();
+    }
+
+    function updateCell(rowId, colId, element) {
+      if (!isEditingMode) return;
+      const row = appState.rows.find(r => r.id === rowId);
+      if (row) {
+        row.cells[colId] = element.innerText.trim();
+        saveState();
+      }
+    }
+
+    function toggleRowDone(rowId) {
+      const row = appState.rows.find(r => r.id === rowId);
+      if (row && !row.isOptional) {
+        row.done = !row.done;
+        saveState();
+        renderTable();
+        updateProgress();
+      }
+    }
+
+    function updateRowType(rowId, val) {
+      if (!isEditingMode) return;
+      const row = appState.rows.find(r => r.id === rowId);
+      if (row) {
+        row.isOptional = (val === 'optional');
+        if (row.isOptional) row.done = false;
+        saveState();
+        renderTable();
+        updateProgress();
+      }
+    }
+
+    function updateProgress() {
+      const trackedRows = appState.rows.filter(r => !r.isOptional);
+      const totalTracked = trackedRows.length;
+      const completedCount = trackedRows.filter(r => r.done).length;
+      const percentage = totalTracked > 0 ? Math.round((completedCount / totalTracked) * 100) : 0;
+
+      document.getElementById('progressText').innerText = `${percentage}% (${completedCount} / ${totalTracked})`;
+      document.getElementById('progressBar').style.width = `${percentage}%`;
+    }
+
+    function setFilter(filter, btn) {
+      currentFilter = filter;
+      document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTable();
+    }
+
+    function resetTracker() {
+      if (!isEditingMode) return;
+      if (!confirm('Are you sure you want to clear the table? All unsaved changes will be lost.')) return;
+      appState = JSON.parse(JSON.stringify(defaultData));
+      saveState();
+      renderApp();
+    }
+
+    // --- File Import & Export ---
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+      const downloadAnchor = document.createElement('a');
+      const filename = (appState.title || 'tracker_table').toLowerCase().replace(/[^a-z0-9]/g, '_') + '.json';
+      
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", filename);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed && Array.isArray(parsed.columns) && Array.isArray(parsed.rows)) {
+            appState = parsed;
+            if (isEditingMode) toggleEditMode();
+            saveState();
+            renderApp();
+            alert('Table successfully imported and loaded!');
+          } else {
+            alert('Invalid file structure. Please upload a valid tracker JSON file.');
+          }
+        } catch (err) {
+          alert('Failed to parse file: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = ''; // Reset file input
+    }
+
+    // Initialize Database & Application
+    window.addEventListener('DOMContentLoaded', initDB);
+  </script>
+</body>
+</html>
